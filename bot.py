@@ -1,91 +1,5 @@
-import os
-import requests
-import yfinance as yf
-import pandas as pd
-
-BOT_TOKEN = os.getenv("BOT_TOKEN")
-CHAT_ID = os.getenv("CHAT_ID")
-
-SYMBOLS = {
-    "XAU/USD": "XAUUSD=X",
-    "EUR/USD": "EURUSD=X",
-    "GBP/USD": "GBPUSD=X",
-    "BTC/USD": "BTC-USD",
-}
 
 
-def send_telegram(message):
-    if not BOT_TOKEN or not CHAT_ID:
-        print("BOT_TOKEN or CHAT_ID is missing")
-        return
-
-    url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
-
-    requests.post(
-        url,
-        data={
-            "chat_id": CHAT_ID,
-            "text": message
-        },
-        timeout=20
-    )
-
-
-def get_data(symbol):
-    try:
-        data = yf.download(
-            symbol,
-            period="5d",
-            interval="15m",
-            progress=False,
-            auto_adjust=False
-        )
-
-        if data.empty:
-            return None
-
-        if isinstance(data.columns, pd.MultiIndex):
-            data.columns = data.columns.get_level_values(0)
-
-        return data.dropna()
-
-    except Exception as e:
-        print("Data error:", e)
-        return None
-
-
-def detect_signal(df):
-    if len(df) < 50:
-        return None
-
-    close = df["Close"]
-    open_ = df["Open"]
-    high = df["High"]
-    low = df["Low"]
-
-    # EMA trend
-    ema20 = close.ewm(span=20).mean()
-    ema50 = close.ewm(span=50).mean()
-
-    # Latest candles
-    o = float(open_.iloc[-1])
-    c = float(close.iloc[-1])
-    h = float(high.iloc[-1])
-    l = float(low.iloc[-1])
-
-    body = abs(c - o)
-    upper_wick = h - max(o, c)
-    lower_wick = min(o, c) - l
-
-    score_buy = 0
-    score_sell = 0
-    reasons_buy = []
-    reasons_sell = []
-
-    # Trend
-    if c > float(ema20.iloc[-1]) > float(ema50.iloc[-1]):
-        score_buy += 2
-        reasons_buy.append("Bullish EMA trend")
 
     if c < float(ema20.iloc[-1]) < float(ema50.iloc[-1]):
         score_sell += 2
@@ -202,9 +116,6 @@ def scan_market():
             message += f"• {reason}\n"
 
         message += """
-⚠️ Risk management required.
-This is a trading signal, not a guaranteed profit.
-"""
 
         send_telegram(message)
 
