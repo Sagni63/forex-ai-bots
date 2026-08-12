@@ -20,14 +20,10 @@ GITHUB_REPOSITORY = os.getenv("GITHUB_REPOSITORY")
 
 JOURNAL_FILE = "trade_journal.json"
 
-# BTC + GOLD only
+# GOLD only
 SYMBOLS = {
-    "BTC/USD": "BTC-USD",
     "XAU/USD": "XAUUSD=X"
 }
-
-MIN_SCORE = 5
-
 
 # =========================
 # TELEGRAM
